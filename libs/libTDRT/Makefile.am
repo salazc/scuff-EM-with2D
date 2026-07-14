@@ -24,7 +24,7 @@ libTDRT_la_SOURCES = 			\
 
 AM_CPPFLAGS = \
   -I$(top_srcdir)/libs/libhrutil	\
-  -I$(top_srcdir)/applications/scuff-cas2D/libAmosBessel	\
+  -I$(top_srcdir)/libs/libAmosBessel	\
   -I$(top_srcdir)/libs/libSGJC       \
   -I$(top_srcdir)/libs/libMDInterp   \
   -I$(top_srcdir)/libs/libMatProp    \

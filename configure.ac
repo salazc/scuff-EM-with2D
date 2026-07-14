@@ -280,11 +280,14 @@ AC_CONFIG_FILES([
  libs/libStaticSolver/Makefile
  libs/libscuffSolver/Makefile
  libs/libscuffSolver/tests/Makefile
+ libs/libTDRT/Makefile
+ libs/libAmosBessel/Makefile
  libs/python/Makefile
  applications/Makefile
  applications/scuff-analyze/Makefile
  applications/scuff-caspol/Makefile
  applications/scuff-cas3D/Makefile
+ applications/scuff-cas2D/Makefile
  applications/scuff-ldos/Makefile
  applications/scuff-neq/Makefile
  applications/scuff-plotEpsMu/Makefile

@@ -6,6 +6,8 @@
 
 #include <math.h>
 #include <string.h>
+// CHSL 
+#include <stdlib.h>
 #include <libAmosBessel.h>
 #include <libMDInterp.h>
 

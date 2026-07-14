@@ -2,6 +2,7 @@ SUBDIRS = \
  scuff-analyze		\
  scuff-caspol		\
  scuff-cas3D		\
+ scuff-cas2D		\
  scuff-ldos  		\
  scuff-neq   		\
  scuff-plotEpsMu	\

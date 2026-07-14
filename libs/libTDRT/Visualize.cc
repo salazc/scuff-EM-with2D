@@ -11,8 +11,14 @@
 #include <stdarg.h>
 
 #include <libhrutil.h>
+// CHSL 
+#include <stdlib.h>
+// CHSL
+using namespace std;
 
 #include "libTDRT.h"
+
+
 
 /***************************************************************/
 /* WriteGPMesh routine. This writes out the panel set as a     */
