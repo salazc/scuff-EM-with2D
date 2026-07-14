@@ -98,19 +98,19 @@ int AmosBessel(char WhichFunction, cdouble z, double MinOrder, int NumOrders,
         break;
 
      case 'K':
-        zbesk_( &(real(z)), &(imag(z)), &MinOrder, &kode, &NumOrders,
+        zbesk_( &zr, &zi, &MinOrder, &kode, &NumOrders,
                 fr, fi, &nz, &ierr);
         break;
 
      case 'O':
         Type=1;
-        zbesh_( &(real(z)), &(imag(z)), &MinOrder, &kode, &Type, &NumOrders,
+        zbesh_( &zr, &zi, &MinOrder, &kode, &Type, &NumOrders,
                 fr, fi, &nz, &ierr);
         break;
 
      case 'T':
         Type=2;
-        zbesh_( &(real(z)), &(imag(z)), &MinOrder, &kode, &Type, &NumOrders,
+        zbesh_( &zr, &zi, &MinOrder, &kode, &Type, &NumOrders,
                 fr, fi, &nz, &ierr);
         break;
 
@@ -135,7 +135,7 @@ int AmosBessel(char WhichFunction, cdouble z, double MinOrder, int NumOrders,
      case 'k':
         Spherical=1;
         MinOrder+=0.5;
-        zbesk_( &(real(z)), &(imag(z)), &MinOrder, &kode, &NumOrders,
+        zbesk_( &zr, &zi, &MinOrder, &kode, &NumOrders,
                 fr, fi, &nz, &ierr);
         break;
 
@@ -143,7 +143,7 @@ int AmosBessel(char WhichFunction, cdouble z, double MinOrder, int NumOrders,
         Spherical=1;
         MinOrder+=0.5;
         Type=1;
-        zbesh_( &(real(z)), &(imag(z)), &MinOrder, &kode, &Type, &NumOrders,
+        zbesh_( &zr, &zi, &MinOrder, &kode, &Type, &NumOrders,
                 fr, fi, &nz, &ierr);
         break;
 
@@ -151,7 +151,7 @@ int AmosBessel(char WhichFunction, cdouble z, double MinOrder, int NumOrders,
         Spherical=1;
         MinOrder+=0.5;
         Type=2;
-        zbesh_( &(real(z)), &(imag(z)), &MinOrder, &kode, &Type, &NumOrders,
+        zbesh_( &zr, &zi, &MinOrder, &kode, &Type, &NumOrders,
                 fr, fi, &nz, &ierr);
         break;
 

@@ -10,6 +10,8 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+// CHSL 
+#include <stdlib.h>
 
 #include "libhrutil.h"
 #include "libTDRT.h"

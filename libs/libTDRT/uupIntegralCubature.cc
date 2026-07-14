@@ -9,6 +9,9 @@
 #include <string.h>
 #include <math.h>
 
+// CHSL 
+#include <stdlib.h>
+
 #include "libTDRT.h"
 #include "libhrutil.h"
 

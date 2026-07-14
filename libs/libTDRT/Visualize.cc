@@ -115,7 +115,9 @@ void TDRTGeometry::WriteGPMeshPlus(const char *format, ...)
       MidPoint[1]=0.5*(V2[1]+V1[1]);
       SegmentNormal[0]=(V2[1]-V1[1]);
       SegmentNormal[1]=-(V2[0]-V1[0]);
-      VecNormalize(SegmentNormal);
+      // VecNormalize(SegmentNormal);
+      // CHSL
+      VecNormalize(SegmentNormal,2);
       Length=VecDistance(V2,V1);
       Location[0]=MidPoint[0]+0.25*Length*SegmentNormal[0];
       Location[1]=MidPoint[1]+0.25*Length*SegmentNormal[1];
@@ -130,7 +132,9 @@ void TDRTGeometry::WriteGPMeshPlus(const char *format, ...)
       MidPoint[1]=0.5*(V2[1]+V1[1]);
       SegmentNormal[0]=(V2[1]-V1[1]);
       SegmentNormal[1]=-(V2[0]-V1[0]);
-      VecNormalize(SegmentNormal);
+      // VecNormalize(SegmentNormal);
+      // CHSL
+      VecNormalize(SegmentNormal,2);
       Length=VecDistance(V2,V1);
       Location[0]=MidPoint[0]-0.25*Length*SegmentNormal[0];
       Location[1]=MidPoint[1]-0.25*Length*SegmentNormal[1];

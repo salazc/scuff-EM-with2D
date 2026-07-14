@@ -27,7 +27,8 @@
 #include <libhmat.h>
 #include <libMatProp.h>
 #include <libhrutil.h>
-
+// CHSL 
+#include <stdlib.h>
 #include "libTDRT.h"
 
 #ifdef HAVE_CONFIG_H

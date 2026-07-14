@@ -13,6 +13,8 @@
 
 #include <libhrutil.h>
 #include <libSGJC.h>
+// CHSL 
+#include <stdlib.h>
 #include "libTDRT.h"
 
 #define NFUN 11

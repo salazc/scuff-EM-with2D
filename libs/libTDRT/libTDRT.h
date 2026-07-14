@@ -38,6 +38,12 @@
 #elif HAVE_TR1
 #include <tr1/unordered_map>
 #endif
+// CHSL 
+#include <stdlib.h>
+#include <map>
+#include <vector>
+
+using namespace std;
 
 /*--------------------------------------------------------------*/
 /*--------------------------------------------------------------*/
@@ -93,6 +99,8 @@ typedef struct StaticSSIDataRecord
 typedef std::unordered_map <unsigned long, StaticSSIDataRecord*> StaticSSIDataMap;
 #elif HAVE_TR1
 typedef std::tr1::unordered_map <unsigned long, StaticSSIDataRecord*> StaticSSIDataMap;
+#else /* CHSL Addition */
+typedef std::map <unsigned long, StaticSSIDataRecord*> StaticSSIDataMap;
 #endif
 typedef struct StaticSSIDataTable
  { 

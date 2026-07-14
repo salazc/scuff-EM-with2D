@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <vector>
+// CHSL
+using namespace std;
 
 #include <libhmat.h> // only needed for GetInterpolationError
 

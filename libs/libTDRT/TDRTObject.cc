@@ -11,6 +11,9 @@
 #include <ctype.h>
 #include <math.h>
 
+// CHSL 
+#include <stdlib.h>
+
 #include "libhrutil.h"
 #include "libMatProp.h"
 #include "libTDRT.h"

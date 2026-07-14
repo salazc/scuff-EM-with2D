@@ -7,7 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-
+// CHSL 
+#include <stdlib.h>
 #include "libTDRT.h"
 #include "libhrutil.h"
 
@@ -58,10 +59,14 @@ void AddSegmentSegmentIntegrals(double *A, double *B, double Sigma,
   AlphaKQ=sqrt(AlphaKQ2);
 
   VecSub(B,A,uHat);
-  l=VecNormalize(uHat);
+  //l=VecNormalize(uHat);
+  // CHSL
+  l=VecNormalize(uHat,2);
 
   VecSub(D,C,upHat);
-  lp=VecNormalize(upHat);
+  //lp=VecNormalize(upHat);
+  // CHSL
+  lp=VecNormalize(upHat,2);
 
   SinTheta = (uHat[0]*upHat[1] - uHat[1]*upHat[0]);
   CosTheta = (uHat[0]*upHat[0] + uHat[1]*upHat[1]);

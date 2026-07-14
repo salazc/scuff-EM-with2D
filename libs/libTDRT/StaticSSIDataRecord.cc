@@ -17,6 +17,8 @@
 #include <math.h>
 
 #include <stdarg.h>
+// CHSL 
+#include <stdlib.h>
 
 #include "libhrutil.h"
 #include "libSGJC.h"

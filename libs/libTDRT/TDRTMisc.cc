@@ -4,6 +4,10 @@
 
 #include <stdlib.h>
 #include <math.h>
+// CHSL 
+#include <vector>
+using namespace std;
+
 #include "libTDRT.h"
 
 double VecDot(double *v1, double *v2)
