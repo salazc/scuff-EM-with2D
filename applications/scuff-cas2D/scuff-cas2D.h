@@ -74,6 +74,7 @@ typedef struct C2DWorkspace
    int WriteHDF5;
    int IntCache;
    double FixedXi, FixedQ;
+   int ElectricOnly, MagneticOnly;
 
 } C2DWorkspace;
 

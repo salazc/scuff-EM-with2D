@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
       }
      else if ( !StrCaseCmp(argv[narg],"--reltol") )
       { if (narg+1>=argc)
-         ErrExit("--abstol option requires one argument");
+         ErrExit("--reltol option requires one argument");
         if (    1!=sscanf(argv[++narg],"%le",&RelTol) )
          ErrExit("invalid RelTol value %s",argv[narg]);
       }
@@ -410,14 +410,15 @@ int main(int argc, char *argv[])
       }
      else if ( !StrCaseCmp(argv[narg],"--Rectangle") )
       { 
-        fprintf(stderr,"Infinite conducting plane at y=0.\n");
-        if (narg+4>=argc)
-         ErrExit("--rectangle option requires four arguments");
-        if (    1!=sscanf(argv[++narg],"%le",RectangleBuffer) 
-             || 1!=sscanf(argv[++narg],"%le",RectangleBuffer+1) 
-             || 1!=sscanf(argv[++narg],"%le",RectangleBuffer+2) 
-             || 1!=sscanf(argv[++narg],"%le",RectangleBuffer+3)
-           ) ErrExit("invalid argument passed to --rectangle");
+       fprintf(stderr,"Infinite conducting plane at y=0.\n");
+       if (narg+4>=argc)
+        ErrExit("--rectangle option requires four arguments");
+       else if (    1!=sscanf(argv[++narg],"%le",RectangleBuffer) 
+           || 1!=sscanf(argv[++narg],"%le",RectangleBuffer+1) 
+           || 1!=sscanf(argv[++narg],"%le",RectangleBuffer+2) 
+           || 1!=sscanf(argv[++narg],"%le",RectangleBuffer+3)
+           ) 
+        ErrExit("invalid argument passed to --rectangle");
        Rectangle=RectangleBuffer;
        fprintf(stderr,"Retaining contributions of vertices within rectangle\n");
        fprintf(stderr," (%g,%g) -- ",Rectangle[0],Rectangle[1]);

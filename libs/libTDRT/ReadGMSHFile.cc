@@ -66,7 +66,7 @@ void TDRTObject::ReadGMSHFile(FILE *f)
   /***************************************************************/
   /* allocate space for vertices ************************************/
   /***************************************************************/
-  Vertices=(double *)malloc(2*NumVertices*sizeof(double *));
+  Vertices=(double *)malloc(2*NumVertices*sizeof(double));
 
   /***************************************************************/
   /* read vertices. we ignore the Z coordinates and the node     */

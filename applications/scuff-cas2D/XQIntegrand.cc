@@ -1,7 +1,4 @@
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-bool ElectricOnly=false;
-bool MagneticOnly=false;
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 /* 
  * XQIntegrand.cc -- calculate casimir energy and/or force integrand at a
  *                -- single (xi,q) point 
@@ -84,8 +81,10 @@ void GetLNDetMInvMInf(C2DWorkspace *W,
    { 
      for(n=0; n<N/2; n++)
       { 
-        double TETerm = log( DRMInf[2*n+0] / abs(M->GetEntry(2*n+0,2*n+0)) );
-        double TMTerm = log( DRMInf[2*n+1] / abs(M->GetEntry(2*n+1,2*n+1)) );
+        double den0 = abs(M->GetEntry(2*n+0,2*n+0)); if (den0 < 1e-300) den0 = 1e-300;
+        double den1 = abs(M->GetEntry(2*n+1,2*n+1)); if (den1 < 1e-300) den1 = 1e-300;
+        double TETerm = log( DRMInf[2*n+0] / den0 );
+        double TMTerm = log( DRMInf[2*n+1] / den1 );
         LNDetTE +=  TETerm;
         LNDetTM +=  TMTerm;
 
@@ -97,11 +96,16 @@ void GetLNDetMInvMInf(C2DWorkspace *W,
   else
    { 
      for(n=0; n<N/4; n++) 
-      { double TETerm= log( DRMInf[4*n+0] / abs(M->GetEntry(4*n+0,4*n+0)) )
-                      +log( DRMInf[4*n+3] / abs(M->GetEntry(4*n+3,4*n+3)) );
+      { double den0 = abs(M->GetEntry(4*n+0,4*n+0)); if (den0 < 1e-300) den0 = 1e-300;
+        double den3 = abs(M->GetEntry(4*n+3,4*n+3)); if (den3 < 1e-300) den3 = 1e-300;
+        double den1 = abs(M->GetEntry(4*n+1,4*n+1)); if (den1 < 1e-300) den1 = 1e-300;
+        double den2 = abs(M->GetEntry(4*n+2,4*n+2)); if (den2 < 1e-300) den2 = 1e-300;
 
-        double TMTerm= log( DRMInf[4*n+1] / abs(M->GetEntry(4*n+1,4*n+1)) )
-                      +log( DRMInf[4*n+2] / abs(M->GetEntry(4*n+2,4*n+2)) );
+        double TETerm= log( DRMInf[4*n+0] / den0 )
+                      +log( DRMInf[4*n+3] / den3 );
+
+        double TMTerm= log( DRMInf[4*n+1] / den1 )
+                      +log( DRMInf[4*n+2] / den2 );
  
         LNDetTE += TETerm;
         LNDetTM += TMTerm; 
@@ -246,11 +250,11 @@ void GetTraceMInvdM(C2DWorkspace *W, char XY, char *Tag, double Xi, double q, do
            double TMTerm =  dM->GetEntryD(4*n+1, 4*n+1) + dM->GetEntryD(4*n+2,4*n+2);
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-if (ElectricOnly)
+if (W->ElectricOnly)
  { TETerm = dM->GetEntryD(4*n,   4*n  );
    TMTerm = dM->GetEntryD(4*n+2, 4*n+2);
  };
-if (MagneticOnly)
+if (W->MagneticOnly)
  { TETerm = dM->GetEntryD(4*n+3, 4*n+3);
    TMTerm = dM->GetEntryD(4*n+1, 4*n+1);
  };
@@ -371,15 +375,42 @@ int Factorize(C2DWorkspace *W)
 /* value of Xi,q were successfully read from the file) or 0    */
 /* on failure).                                                */
 /***************************************************************/
+static int ParseCacheLine(const char *Line, double q, char *fTag, double *fXi, double *fq, double *Q, int NumQuantities)
+{
+  int offset = 0;
+  int nRead = 0;
+  if (q == -1.0)
+    nRead = sscanf(Line, "%999s %le%n", fTag, fXi, &offset);
+  else
+    nRead = sscanf(Line, "%999s %le %le%n", fTag, fXi, fq, &offset);
+
+  if ((q == -1.0 && nRead < 2) || (q != -1.0 && nRead < 3))
+    return 0;
+
+  const char *ptr = Line + offset;
+  char *endptr;
+  int count = 0;
+  for (count = 0; count < NumQuantities; count++)
+   {
+     double val = strtod(ptr, &endptr);
+     if (ptr == endptr) break;
+     Q[count] = val;
+     ptr = endptr;
+   }
+  return count;
+}
+
 int CacheRead(C2DWorkspace *W, double Xi, double q, double *EF)
 { 
   FILE *f;
-  double Q[3];
   char Line[1000], fTag[1000];
-  double fXi, fq;
-  int nt, ntnq, nRead, NumQuantitiesRead, FoundFirst;
+  double fXi, fq = -1.0;
+  int nt, ntnq, NumQuantitiesRead, FoundFirst;
 
   if (!W->IntCache) return 0;
+
+  double *Q = (double *)malloc(W->NumQuantities * sizeof(double));
+  if (!Q) return 0;
 
   /*----------------------------------------------------------*/
   /* 0. try to open the cache file. --------------------------*/
@@ -390,7 +421,9 @@ int CacheRead(C2DWorkspace *W, double Xi, double q, double *EF)
    f=fopen(W->ByXQFileName,"r");
 
   if (!f)
-   return 0;
+   { free(Q);
+     return 0;
+   }
 
   /*----------------------------------------------------------*/
   /* 1. skip down through the cache file until we find a line */
@@ -402,7 +435,10 @@ int CacheRead(C2DWorkspace *W, double Xi, double q, double *EF)
      if ( Line[0]=='#' || Line[0]=='\n' )
       continue;
 
-     sscanf(Line,"%s %le %le",fTag,&fXi,&fq);
+     if (q == -1.0)
+      sscanf(Line, "%999s %le", fTag, &fXi);
+     else
+      sscanf(Line, "%999s %le %le", fTag, &fXi, &fq);
 
      if (    ( fabs(fXi-Xi) <= 1.0e-6*Xi)
           && ( q==-1.0 || fabs(fq-q) <= 1.0e-6*q)
@@ -418,6 +454,7 @@ int CacheRead(C2DWorkspace *W, double Xi, double q, double *EF)
         else 
          Log(" did not find (Tag,Xi,q)=(%s,%e,%e) in .byXQ file.",W->Tags[0],Xi,q);
       };
+     free(Q);
      fclose(f); 
      return 0;
    };
@@ -433,18 +470,12 @@ int CacheRead(C2DWorkspace *W, double Xi, double q, double *EF)
   /* 2. verify that the line we just read from the cache file */
   /*    contains data for all the quantities we need          */
   /*----------------------------------------------------------*/
-  if (q==-1.0)
-   { nRead=sscanf(Line,"%s %le %le %le %le",fTag,&fXi,Q,Q+1,Q+2);
-     NumQuantitiesRead=nRead-2;
-   }
-  else
-   { nRead=sscanf(Line,"%s %le %le %le %le %le",fTag,&fXi,&fq,Q,Q+1,Q+2);
-     NumQuantitiesRead=nRead-3;
-   };
-  
+  NumQuantitiesRead = ParseCacheLine(Line, q, fTag, &fXi, &fq, Q, W->NumQuantities);
+
   if ( NumQuantitiesRead < W->NumQuantities )
    { if (TDRTGeometry::LogLevel>=2)
       Log(" ...but number of quantities is wrong (skipping)");
+     free(Q);
      fclose(f);
      return 0; 
    };
@@ -460,23 +491,18 @@ int CacheRead(C2DWorkspace *W, double Xi, double q, double *EF)
      if ( !fgets(Line,1000,f) )
       { if (TDRTGeometry::LogLevel>=2)
          Log(" ...but data for some transforms were missing (skipping)");
+        free(Q);
         fclose(f);
         return 0; 
       };
 
-     if (q==-1.0)
-      { nRead=sscanf(Line,"%s %le %le %le %le",fTag,&fXi,Q,Q+1,Q+2);
-        NumQuantitiesRead=nRead-2;
-      }
-     else
-      { nRead=sscanf(Line,"%s %le %le %le %le %le",fTag,&fXi,&fq,Q,Q+1,Q+2);
-        NumQuantitiesRead=nRead-3;
-      };
-  
+     NumQuantitiesRead = ParseCacheLine(Line, q, fTag, &fXi, &fq, Q, W->NumQuantities);
+
      /* check for incorrect number of quantities */
      if ( NumQuantitiesRead < W->NumQuantities )
       { if (TDRTGeometry::LogLevel>=2)
          Log(" ...but number of quantities is wrong (skipping)");
+        free(Q);
         fclose(f);
         return 0; 
       };
@@ -488,6 +514,7 @@ int CacheRead(C2DWorkspace *W, double Xi, double q, double *EF)
         )
       { if (TDRTGeometry::LogLevel>=2)
          Log(" ...but tag #%i did not match (%s != %s) (skipping)",nt,fTag,W->Tags[nt]);
+        free(Q);
         fclose(f);
         return 0; 
       };
@@ -504,6 +531,7 @@ int CacheRead(C2DWorkspace *W, double Xi, double q, double *EF)
       Log(" (Xi,q)=(%g,%g): successfully read all data from .byXQ file",Xi,q);
    };
 
+  free(Q);
   fclose(f);
   return 1;
 
@@ -537,17 +565,7 @@ void XQIntegrand(C2DWorkspace *W, double Xi, double q, double *EF)
   else
    pCC=0;
 
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-char *s;
-if ( !ElectricOnly && (s=getenv("SCUFF_ELECTRIC_ONLY")) && s[0]=='1')
- { ElectricOnly=true;
-   printf("Contributions of electric currents only.\n");
- };
-if ( !MagneticOnly && (s=getenv("SCUFF_MAGNETIC_ONLY")) && s[0]=='1')
- { MagneticOnly=true;
-   printf("Contributions of magnetic currents only.\n");
- };
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+
 
 
   /***************************************************************/
@@ -645,6 +663,8 @@ if ( !MagneticOnly && (s=getenv("SCUFF_MAGNETIC_ONLY")) && s[0]=='1')
   /* transformation, then calculate all quantities requested.    */
   /***************************************************************/
   f=fopen(W->ByXQFileName,"a");
+  if (!f)
+   ErrExit("cannot open output file %s for writing", W->ByXQFileName);
   EFPtr=EF;
   for(ntnq=nt=0; nt<W->NumTransforms; nt++)
    { 

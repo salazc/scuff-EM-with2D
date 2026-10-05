@@ -58,6 +58,11 @@ C2DWorkspace *CreateC2DWorkspace(TDRTGeometry *G, char *TransListName,
   W->IntCache=IntCache;
   W->NumContributingIVs=0;
   W->ProfileFileName=0;
+  char *s_eo, *s_mo;
+  W->ElectricOnly = ((s_eo = getenv("SCUFF_ELECTRIC_ONLY")) && s_eo[0] == '1') ? 1 : 0;
+  W->MagneticOnly = ((s_mo = getenv("SCUFF_MAGNETIC_ONLY")) && s_mo[0] == '1') ? 1 : 0;
+  if (W->ElectricOnly) printf("Contributions of electric currents only.\n");
+  if (W->MagneticOnly) printf("Contributions of magnetic currents only.\n");
 
   if (NumThreads==0)
    NumThreads=GetNumThreads();

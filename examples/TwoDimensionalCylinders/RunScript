@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DIRBASE=/home/homer/work/scuff-em-installation/bin
+DIRBASE=/home/salazc/scuff-em-installation/bin
 
 CODE=${DIRBASE}/scuff-cas2D
 

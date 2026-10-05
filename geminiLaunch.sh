@@ -1,0 +1,3 @@
+
+
+env -u NODE_OPTIONS -u VSCODE_AMD_ENTRYPOINT gemini
