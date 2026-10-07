@@ -94,6 +94,10 @@ SC3Data *CreateSC3Data(RWGGeometry *G, char *TransFile,
   /*-                           Mu=3,4,5, for axis 1,2,3 rotation */
   /*--------------------------------------------------------------*/
   int NS=G->NumSurfaces;
+  SC3D->SurfaceNeverMoved = (bool *)mallocEC(NS * sizeof(bool));
+  SC3D->UTIntegralBuffer[0] = SC3D->UTIntegralBuffer[1] = 0;
+  SC3D->BZIArgs = 0;
+
   SC3D->TBlocks  = (HMatrix **)mallocEC(NS*sizeof(HMatrix *));
   SC3D->TAccelerators = PBC ? (void **)mallocEC(NS*sizeof(void *)) : 0;
   bool NeedDMDZ = (WhichQuantities & QUANTITY_ZFORCE);
@@ -300,8 +304,93 @@ void WriteFilePreamble(SC3Data *SC3D, int PreambleType)
 
   fclose(f);
 
-  SC3D->UTIntegralBuffer[0]=SC3D->UTIntegralBuffer[1]=0;
+}
 
-  SC3D->BZIArgs=0;
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+void FreeSC3Data(SC3Data *SC3D)
+{
+  if (!SC3D) return;
+  RWGGeometry *G = SC3D->G;
+  int NS = G ? G->NumSurfaces : 0;
+  int NumBlocks = NS * (NS - 1) / 2;
 
+  // 1. Clean up T blocks and accelerators
+  if (SC3D->TBlocks)
+   {
+     for(int ns=0; ns<NS; ns++)
+      {
+        if (G && G->Mate[ns] == -1 && SC3D->TBlocks[ns])
+         delete SC3D->TBlocks[ns];
+      }
+     free(SC3D->TBlocks);
+   }
+
+  if (SC3D->TAccelerators)
+   {
+     if (G)
+      for(int ns=0; ns<NS; ns++)
+       if (SC3D->TAccelerators[ns])
+        G->DestroyABMBAccelerator(SC3D->TAccelerators[ns]);
+     free(SC3D->TAccelerators);
+   }
+
+  // 2. Clean up U blocks and dU blocks
+  if (SC3D->UBlocks)
+   {
+     for(int nb=0; nb<NumBlocks; nb++)
+      if (SC3D->UBlocks[nb]) delete SC3D->UBlocks[nb];
+     free(SC3D->UBlocks);
+   }
+
+  if (SC3D->dUBlocks)
+   {
+     for(int i=0; i<6*NumBlocks; i++)
+      if (SC3D->dUBlocks[i]) delete SC3D->dUBlocks[i];
+     free(SC3D->dUBlocks);
+   }
+
+  // 3. Clean up U accelerators
+  if (SC3D->UAccelerators)
+   {
+     int NT = SC3D->NumTransformations;
+     for(int nt=0; nt<NT; nt++)
+      {
+        if (SC3D->UAccelerators[nt])
+         {
+           if (G)
+            for(int nb=0; nb<NumBlocks; nb++)
+             if (SC3D->UAccelerators[nt][nb])
+              G->DestroyABMBAccelerator(SC3D->UAccelerators[nt][nb]);
+           free(SC3D->UAccelerators[nt]);
+         }
+      }
+     free(SC3D->UAccelerators);
+   }
+
+  // 4. Clean up composite matrices & vectors
+  if (SC3D->M) delete SC3D->M;
+  if (SC3D->dM) delete SC3D->dM;
+  if (SC3D->MInfLUDiagonal) delete SC3D->MInfLUDiagonal;
+  if (SC3D->MM1MInf) delete SC3D->MM1MInf;
+  if (SC3D->ipiv) free(SC3D->ipiv);
+
+  // 5. Clean up convergence, motion tracking, and quadrature buffers
+  if (SC3D->XiConverged) free(SC3D->XiConverged);
+  if (SC3D->BZConverged) free(SC3D->BZConverged);
+  if (SC3D->SurfaceNeverMoved) free(SC3D->SurfaceNeverMoved);
+  if (SC3D->UTIntegralBuffer[0]) free(SC3D->UTIntegralBuffer[0]);
+  if (SC3D->UTIntegralBuffer[1]) free(SC3D->UTIntegralBuffer[1]);
+
+  // 6. Clean up transformations
+  DestroyGTCList(SC3D->GTCs);
+
+  // 7. Clean up file name strings
+  if (SC3D->FileBase) free(SC3D->FileBase);
+  if (SC3D->OutFileName) free(SC3D->OutFileName);
+  if (SC3D->ByXiFileName) free(SC3D->ByXiFileName);
+  if (SC3D->ByXiKFileName) free(SC3D->ByXiKFileName);
+
+  free(SC3D);
 }

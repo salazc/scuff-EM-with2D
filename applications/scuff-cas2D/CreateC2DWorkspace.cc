@@ -38,7 +38,7 @@ C2DWorkspace *CreateC2DWorkspace(TDRTGeometry *G, char *TransListName,
   char PPFileName[1000];
   FILE *TransFile;
   char *p, *TransLines[MAXTRANS], *Tags[MAXTRANS];
-  int nc, no, nop, NO, NBF, NBFp, N, N1, nt, nq, NTNQ;
+  int nc, no, nop, NO, NBF, NBFp, N, nt, nq, NTNQ;
   int LineNum;
 
   /***************************************************************/
@@ -49,7 +49,6 @@ C2DWorkspace *CreateC2DWorkspace(TDRTGeometry *G, char *TransListName,
   W->G=G;
   W->TransListName=strdup(TransListName);
   N=W->N=G->TotalBFs;
-  N1=G->Objects[0]->NumBFs;
   W->WhichQuantities=WhichQuantities;
   W->FixedXi=W->FixedQ=-1.0;
   W->TETM=TETM;
@@ -244,10 +243,10 @@ C2DWorkspace *CreateC2DWorkspace(TDRTGeometry *G, char *TransListName,
   W->M=new HMatrix(N,N,LHM_COMPLEX,LHM_NORMAL);
 
   W->dU0bdX=(HMatrix **)malloc(G->NumObjects*sizeof(HMatrix *));
-  memset(W->dU0bdX,0,G->NumObjects*sizeof(cdouble *));
+  memset(W->dU0bdX,0,G->NumObjects*sizeof(HMatrix *));
 
   W->dU0bdY=(HMatrix **)malloc(G->NumObjects*sizeof(HMatrix *));
-  memset(W->dU0bdY,0,G->NumObjects*sizeof(cdouble *));
+  memset(W->dU0bdY,0,G->NumObjects*sizeof(HMatrix *));
 
   /*--------------------------------------------------------*/
   /*- dT0dY is the derivative of the T0 block of the matrix */
@@ -261,8 +260,13 @@ C2DWorkspace *CreateC2DWorkspace(TDRTGeometry *G, char *TransListName,
   /*--------------------------------------------------------*/
   if ( WhichQuantities & QUANTITY_ENERGY )
    { 
-     W->ipiv=(int *)malloc(N*sizeof(double));
+     W->ipiv=(int *)malloc(N*sizeof(int));
      W->DRMInf=(double *)malloc(N*sizeof(double));
+   }
+  else
+   {
+     W->ipiv=0;
+     W->DRMInf=0;
    };
 
   /*--------------------------------------------------------*/
@@ -294,6 +298,8 @@ C2DWorkspace *CreateC2DWorkspace(TDRTGeometry *G, char *TransListName,
   /*  = static segment-segment data table for object #no         */
   /***************************************************************/
   NO=G->NumObjects;
+  W->TSSSIDataTables=0;
+  W->USSSIDataTables=0;
   if (!VisualizeOnly)
    { W->TSSSIDataTables=(StaticSSIDataTable **)malloc(NO*sizeof(StaticSSIDataTable *));
      for(no=0; no<NO; no++)
@@ -321,7 +327,8 @@ C2DWorkspace *CreateC2DWorkspace(TDRTGeometry *G, char *TransListName,
       { 
         G->Transform( W->TransLines[nt] );
    
-        W->USSSIDataTables[nt]=(StaticSSIDataTable **)malloc(NO*NO*sizeof(StaticSSIDataTable **));
+        W->USSSIDataTables[nt]=(StaticSSIDataTable **)malloc(NO*NO*sizeof(StaticSSIDataTable *));
+        memset(W->USSSIDataTables[nt], 0, NO*NO*sizeof(StaticSSIDataTable *));
         for(no=0; no<NO; no++)
          for(nop=no+1; nop<NO; nop++)
           { 
@@ -389,4 +396,119 @@ C2DWorkspace *CreateC2DWorkspace(TDRTGeometry *G, char *TransListName,
   return W;
     
 
+}
+
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+void FreeC2DWorkspace(C2DWorkspace *W)
+{
+  if (!W) return;
+  TDRTGeometry *G = W->G;
+  int NO = G ? G->NumObjects : 0;
+
+  // 1. Matrices
+  if (W->T)
+   {
+     for(int no=0; no<NO; no++)
+      if (G && G->Mate[no] == -1 && W->T[no])
+       delete W->T[no];
+     free(W->T);
+   }
+
+  if (W->TI)
+   {
+     for(int no=0; no<NO; no++)
+      if (W->TI[no]) delete W->TI[no];
+     free(W->TI);
+   }
+
+  if (W->Uab)
+   {
+     for(int no=0; no<NO; no++)
+      {
+        if (W->Uab[no])
+         {
+           for(int nop=no+1; nop<NO; nop++)
+            if (W->Uab[no][nop]) delete W->Uab[no][nop];
+           free(W->Uab[no]);
+         }
+      }
+     free(W->Uab);
+   }
+
+  if (W->M) delete W->M;
+  if (W->dM) delete W->dM;
+  if (W->dT0dY) delete W->dT0dY;
+
+  if (W->dU0bdX)
+   {
+     for(int no=0; no<NO; no++)
+      if (W->dU0bdX[no]) delete W->dU0bdX[no];
+     free(W->dU0bdX);
+   }
+
+  if (W->dU0bdY)
+   {
+     for(int no=0; no<NO; no++)
+      if (W->dU0bdY[no]) delete W->dU0bdY[no];
+     free(W->dU0bdY);
+   }
+
+  if (W->ipiv) free(W->ipiv);
+  if (W->DRMInf) free(W->DRMInf);
+
+  // 2. Static SSI Tables
+  if (W->TSSSIDataTables)
+   {
+     for(int no=0; no<NO; no++)
+      if (G && G->Mate[no] == -1 && W->TSSSIDataTables[no])
+       DestroyStaticSSIDataTable(W->TSSSIDataTables[no]);
+     free(W->TSSSIDataTables);
+   }
+
+  if (W->USSSIDataTables)
+   {
+     for(int nt=0; nt<W->NumTransforms; nt++)
+      {
+        if (W->USSSIDataTables[nt])
+         {
+           for(int no=0; no<NO; no++)
+            for(int nop=no+1; nop<NO; nop++)
+             if (W->USSSIDataTables[nt][no + nop*NO])
+              DestroyStaticSSIDataTable(W->USSSIDataTables[nt][no + nop*NO]);
+           free(W->USSSIDataTables[nt]);
+         }
+      }
+     free(W->USSSIDataTables);
+   }
+
+  // 3. Image objects
+  if (W->ImageObjects)
+   {
+     for(int no=0; no<NO; no++)
+      FreeImageObject(W->ImageObjects[no]);
+     free(W->ImageObjects);
+   }
+
+  // 4. Strings & arrays
+  if (W->TransLines)
+   {
+     for(int nt=0; nt<W->NumTransforms; nt++)
+      if (W->TransLines[nt]) free(W->TransLines[nt]);
+     free(W->TransLines);
+   }
+  if (W->Tags)
+   {
+     for(int nt=0; nt<W->NumTransforms; nt++)
+      if (W->Tags[nt]) free(W->Tags[nt]);
+     free(W->Tags);
+   }
+  if (W->Converged) free(W->Converged);
+  if (W->TransListName) free(W->TransListName);
+  if (W->ByXQFileName) free(W->ByXQFileName);
+  if (W->ByXiFileName) free(W->ByXiFileName);
+  if (W->ContributingIVIndices) free(W->ContributingIVIndices);
+
+  free(W);
 }

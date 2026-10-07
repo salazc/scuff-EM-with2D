@@ -341,9 +341,17 @@ int main(int argc, char *argv[])
 
   delete[] EFT;
 
+  FreeSC3Data(SC3D);
+  delete G;
+  if (XiPoints) delete XiPoints;
+  if (XiKPoints) delete XiKPoints;
+  if (FileBase) free(FileBase);
+  if (BZIArgs) free(BZIArgs);
+
   /***************************************************************/
   /***************************************************************/
   /***************************************************************/
   printf("Thank you for your support.\n");
 
+  return 0;
 }

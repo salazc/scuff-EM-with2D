@@ -228,7 +228,7 @@ void EvaluateXQIntegral(C2DWorkspace *W, double *I, double *E)
      for(int ntnq=0; ntnq<W->NTNQ; ntnq++)
       I[ntnq] += DeltaI[ntnq];
 
-     free(DeltaI);
+     delete[] DeltaI;
    }
   else
    { 
@@ -370,7 +370,7 @@ void EvaluateMatsubaraSum(C2DWorkspace *W, double T, double *I, double *E)
 void ProcessXQList(C2DWorkspace *W, char *XQListName)
 {
   double *I = new double[W->NTNQ];
-  char buffer[200], *p;
+  char buffer[1000], *p;
   double Xi, Q;
   int LineNum, nConv, nRead;
   FILE *f;
@@ -378,7 +378,7 @@ void ProcessXQList(C2DWorkspace *W, char *XQListName)
   f=fopen(XQListName,"r"); /* we have already checked that this works */
 
   LineNum=0;
-  while( fgets(buffer,1000,f) )
+  while( fgets(buffer,sizeof(buffer),f) )
    { 
       LineNum++;
 

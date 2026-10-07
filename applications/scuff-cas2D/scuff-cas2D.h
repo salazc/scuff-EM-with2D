@@ -86,6 +86,9 @@ C2DWorkspace *CreateC2DWorkspace(TDRTGeometry *G, char *TransListName,
                                  int nThread, int TETM, 
                                  int GroundPlane, int WriteHDF5, int IntCache,
                                  int VisualizeOnly);
+
+void FreeC2DWorkspace(C2DWorkspace *W);
+void FreeImageObject(TDRTObject *IO);
  
 void XQIntegrand(C2DWorkspace *EFW, double Xi, double q, double *EF);
 void PrintConsoleOutput(C2DWorkspace *W, double *I);

@@ -264,7 +264,7 @@ void AddImageContributionToU(TDRTObject *Oa, TDRTObject *ObImage,
   /* inside the objects, but we do need to know if they are PEC or */
   /* not; we communicate this information to the _Thread routine   */
   /* by setting EpsIn=-1.0 for the PEC case and =0.0 otherwise     */
-  double EpsIn;
+  double EpsIn = 0.0;
   if ( Oa->MP->IsPEC() && ObImage->MP->IsPEC() )
    EpsIn=-1.0;
   else if ( !(Oa->MP->IsPEC()) && !(ObImage->MP->IsPEC()) )
@@ -514,7 +514,7 @@ void AssembleTI(TDRTObject *O, TDRTObject *OImage, double Xi, double q,
   /*--------------------------------------------------------------*/
   /*--------------------------------------------------------------*/
   /*--------------------------------------------------------------*/
-  double EpsIn, MuIn;
+  double EpsIn = 0.0, MuIn = 0.0;
   if ( O->MP->IsPEC() )
    EpsIn=-1.0;
   else
@@ -645,7 +645,7 @@ void WriteImageObjectPPMeshes(C2DWorkspace *W, const char *FileName, const char 
   FILE *f;
   TDRTObject *O;
   double *VA, *VB, Val;
-  int i, no, ns;
+  int no, ns;
 
   /***************************************************************/
   /***************************************************************/
@@ -674,4 +674,20 @@ void WriteImageObjectPPMeshes(C2DWorkspace *W, const char *FileName, const char 
    
   fprintf(f,"};\n");
   fclose(f);
+}
+
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+void FreeImageObject(TDRTObject *IO)
+{
+  if (!IO) return;
+  if (IO->Vertices) free(IO->Vertices);
+  if (IO->Segments) free(IO->Segments);
+  if (IO->IVs) free(IO->IVs);
+  if (IO->Neighbors) free(IO->Neighbors);
+  if (IO->MeshFileName) free(IO->MeshFileName);
+  if (IO->Label) free(IO->Label);
+  // MP is shared with original object, so do not free
+  free(IO);
 }

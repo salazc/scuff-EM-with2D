@@ -93,6 +93,9 @@ typedef struct SC3Data
    bool *XiConverged;
    bool *BZConverged;
 
+   // per-surface motion tracking for current frequency
+   bool *SurfaceNeverMoved;
+
    // storage of outer integration variables for nested quadratures
    double Xi, ur;
 
@@ -123,6 +126,7 @@ SC3Data *CreateSC3Data(RWGGeometry *G, char *TransFile,
                        bool NewEnergyMethod, char *FileBase);
 
 void WriteFilePreamble(SC3Data *SC3D, int PreambleType);
+void FreeSC3Data(SC3Data *SC3D);
 
 /***************************************************************/
 /* The total Casimir energy (or force, or torque) is an        */

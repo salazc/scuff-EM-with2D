@@ -476,7 +476,11 @@ int main(int argc, char *argv[])
                        IntCache, VisualizeOnly);
 
   if (VisualizeOnly)
-   exit(1);
+   { FreeC2DWorkspace(W);
+     delete G;
+     free(GeoFileBase);
+     exit(0);
+   };
 
   W->AbsTol=AbsTol;
   W->RelTol=RelTol;
@@ -579,7 +583,13 @@ int main(int argc, char *argv[])
      printf("Data written to file %s.\n",W->ByXQFileName);
      printf("Thank you for your support.\n");
 
-     exit(1);
+     free(I);
+     free(E);
+     FreeC2DWorkspace(W);
+     delete G;
+     free(GeoFileBase);
+
+     exit(0);
    }
   /*-------------------------------------------------------------*/
   /* 3F. otherwise evaluate the full Xi-Q integral using the     */
@@ -663,10 +673,17 @@ int main(int argc, char *argv[])
          fprintf(f,"%.2e ",E[ntnq]);
         fprintf(f,"\n");
       };
-     fclose(f);
+      fclose(f);
    };
 
+  free(I);
+  free(E);
+  FreeC2DWorkspace(W);
+  delete G;
+  free(GeoFileBase);
+
   printf("Thank you for your support.\n");
+  return 0;
 }  
 
 /***************************************************************/

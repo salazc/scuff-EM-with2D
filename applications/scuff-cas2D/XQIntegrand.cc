@@ -119,6 +119,9 @@ void GetLNDetMInvMInf(C2DWorkspace *W,
   LNDetTE *= -1.0/(2.0*M_PI*M_PI);
   LNDetTM *= -1.0/(2.0*M_PI*M_PI);
 
+  if (!IsFinite(LNDetTE)) LNDetTE = 0.0;
+  if (!IsFinite(LNDetTM)) LNDetTM = 0.0;
+
   p=*ResultPtr;
   if (W->TETM)
    { (*p++) = LNDetTE;
@@ -272,6 +275,9 @@ if (W->MagneticOnly)
 
   TraceTE *= -1.0/(2.0*M_PI*M_PI);
   TraceTM *= -1.0/(2.0*M_PI*M_PI);
+
+  if (!IsFinite(TraceTE)) TraceTE = 0.0;
+  if (!IsFinite(TraceTM)) TraceTM = 0.0;
 
   p=*ResultPtr;
   if (W->TETM)

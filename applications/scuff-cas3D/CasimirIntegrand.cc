@@ -62,7 +62,13 @@ double GetLNDetMInvMInf(SC3Data *SC3D)
      HVector *MInfLUDiagonal = SC3D->MInfLUDiagonal;
 
      for(int n=0; n<N; n++)
-      LNDet+=log( abs( MInfLUDiagonal->GetEntryD(n) / M->GetEntry(n,n) ) );
+      {
+        double den = abs( M->GetEntry(n,n) );
+        if (den < 1e-300) den = 1e-300;
+        double num = abs( MInfLUDiagonal->GetEntryD(n) );
+        if (num < 1e-300) num = 1e-300;
+        LNDet += log( num / den );
+      }
    }
   else
    {
@@ -79,7 +85,11 @@ double GetLNDetMInvMInf(SC3Data *SC3D)
      MM1MInf->LUFactorize();
 
      for(int n=0; n<N; n++)
-      LNDet+=log( abs( MM1MInf->GetEntry(n,n) ) );
+      {
+        double val = abs( MM1MInf->GetEntry(n,n) );
+        if (val < 1e-300) val = 1e-300;
+        LNDet += log( val );
+      }
    }
 
   /*--------------------------------------------------------------*/
@@ -286,9 +296,7 @@ void GetCasimirIntegrand(void *pSC3D, cdouble Omega,
   /* that surface is moved, and then remains false for the rest  */
   /* of the calculations done at this frequency                  */
   /***************************************************************/
-  static bool *SurfaceNeverMoved=0;
-  if (SurfaceNeverMoved==0)
-   SurfaceNeverMoved=(bool *)mallocEC(G->NumSurfaces*sizeof(bool));
+  bool *SurfaceNeverMoved = SC3D->SurfaceNeverMoved;
   for(int ns=0; ns<G->NumSurfaces; ns++)
    SurfaceNeverMoved[ns]=true;
 
