@@ -1,0 +1,33 @@
+CPPFLAGS += -I../../libs/libhrutil
+CPPFLAGS += -I../../libs/libhmat
+CPPFLAGS += -I../../libs/libMatProp
+CPPFLAGS += -I../../libs/libMDInterp
+CPPFLAGS += -I../../libs/libSGJC
+CPPFLAGS += -I../../libs/libAmosBessel
+CPPFLAGS += -I../../libs/libTDRT
+
+LDFLAGS += -L../../libs/libhrutil/.libs
+LDFLAGS += -L../../libs/libhmat/.libs
+LDFLAGS += -L../../libs/libMatProp/.libs
+LDFLAGS += -L../../libs/libMDInterp/.libs
+LDFLAGS += -L../../libs/libSGJC/.libs
+LDFLAGS += -L../../libs/libTDRT/.libs
+LDFLAGS += -L../../libs/libAmosBessel/.libs
+
+export LB_LIBS=-llapack -lblas -lgfortran -lgomp
+export HDF5_LIBS=-lhdf5 -lhdf5_hl
+
+HR_LIBS= -lTDRT -lMatProp -lMDInterp -lAmosBessel -lhmat -lSGJC -lhrutil
+LIBS = $(HR_LIBS) $(HDF5_LIBS) $(LB_LIBS) -lm
+
+OBJS = CreateC2DWorkspace.o CubatureMethods.o ImageObjects.o scuff-cas2D.o XQIntegrand.o
+
+OBJS=	scuff-cas2DLCN.o        \
+        CreateC2DWorkspace.o \
+	CubatureMethods.o    \
+	ImageObjects.o       \
+        XQIntegrand.o        \
+
+
+scuff-cas2DLCN:	$(OBJS)
+		$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)

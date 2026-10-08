@@ -288,6 +288,7 @@ AC_CONFIG_FILES([
  applications/scuff-caspol/Makefile
  applications/scuff-cas3D/Makefile
  applications/scuff-cas2D/Makefile
+ applications/scuff-cas2DLCN/Makefile
  applications/scuff-ldos/Makefile
  applications/scuff-neq/Makefile
  applications/scuff-plotEpsMu/Makefile

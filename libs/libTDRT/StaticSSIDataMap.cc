@@ -417,8 +417,10 @@ StaticSSIDataTable *CreateStaticSSIDataTable(TDRTObject *Oa, TDRTObject *Ob, int
 /***************************************************************/
 void DestroyStaticSSIDataTable(StaticSSIDataTable *SSSIDT)
 {
+  if (!SSSIDT || !(SSSIDT->Buffer) )
   if (!SSSIDT)
    return;
+  free(SSSIDT->Buffer); 
   if (SSSIDT->Map)
    delete SSSIDT->Map;
   if (SSSIDT->Buffer)
