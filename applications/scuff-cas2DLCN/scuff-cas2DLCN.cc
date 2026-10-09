@@ -19,6 +19,32 @@
 #include "libTDRT.h"
 #include "scuff-cas2DLCN.h"
 
+
+
+/***************************************************************/
+/* print usage message *****************************************/
+/***************************************************************/
+void UsageLCN(const char *ErrMsg, ...)
+{ 
+  va_list ap;
+  char buffer[1000];
+
+  if (ErrMsg)
+   { va_start(ap,ErrMsg);
+     vsnprintf(buffer,1000,ErrMsg,ap);
+     fprintf(stderr,"\nerror: %s (aborting)\n\n",buffer);
+     va_end(ap);
+   };
+
+  fprintf(stderr,"usage: Casimir2DLCN [options] \n");
+  fprintf(stderr," options:                 \n");
+  fprintf(stderr,"                           \n");
+  fprintf(stderr,"  --configFile  configFile.xml\n");
+  fprintf(stderr,"\n");
+  exit(1);
+}
+
+
 /***************************************************************/
 /* print usage message *****************************************/
 /***************************************************************/
@@ -34,7 +60,7 @@ void Usage(const char *ErrMsg, ...)
      va_end(ap);
    };
 
-  fprintf(stderr,"usage: Casimir2D [options] \n");
+  fprintf(stderr,"usage: Casimir2DLCN [options] \n");
   fprintf(stderr," options:                 \n");
   fprintf(stderr,"                           \n");
   fprintf(stderr,"  --geometry  MyGeo.tdgeo  \n");
@@ -232,10 +258,92 @@ void WriteFilePreamble(C2DWorkspace *W, FILE *f, int FileType,
   
 }
 
+
+#include "tinyxml2.h"
+
+
+using namespace tinyxml2;
+
+/***************************************************************/
+/* Main CHSL Implementation. Takes configuration from XML file */
+/***************************************************************/
+int main(int argc, char *argv[])
+{ 
+  int narg, NumThreads, WhichQuantities;
+  int TETM, GroundPlane;
+  int WriteHDF5;
+  int IntCache;
+  TDRTGeometry *G;
+  double Xi, Q, T;
+  double AbsTol, RelTol, XQMin;
+  double LengthUnit;
+  double RectangleBuffer[4], *Rectangle;
+
+  char *GeoFileBase, *TransListName, *XQListName, *ProfileFile;
+  char OutFileName[200];
+  int nt, nq, ntnq, NTNQ;
+  int VisualizeOnly;
+
+  C2DWorkspace *W;
+  FILE *f;
+  double *I, *E;
+  
+  /***************************************************************/
+  /***************************************************************/
+  /***************************************************************/
+  InstallHRSignalHandler();
+  SetLogFileName("scuff-cas2DLCN.log");
+
+  /***************************************************************/
+  /***************************************************************/
+  /* 1. process command-line arguments ***************************/
+  /***************************************************************/
+  /***************************************************************/
+  G=0;
+  TransListName=0;
+  Xi=Q=T=-1.0;
+  NumThreads=0;
+  WhichQuantities=0;
+  TETM=GroundPlane=WriteHDF5=IntCache=0;
+  XQListName=0;
+  AbsTol=1.0;
+  RelTol=1.0e-2;
+  XQMin=1.0e-3;
+  VisualizeOnly=0;
+  LengthUnit=0.0;
+  Rectangle=0;
+  ProfileFile=0;
+
+  XMLDocument doc;
+
+  if (argc < 2) {
+    Usage("No configuration file provided.");
+  }
+
+  if (doc.LoadFile(argv[1]) != XML_SUCCESS) {
+    ErrExit("Failed to load configuration file.");
+  }
+
+  XMLElement* root = doc.RootElement();
+  if (!root) {
+    ErrExit("Invalid configuration file format.");
+  } 
+
+  /***************************************************************/ 
+  /* Starting to parse XML file */
+
+
+
+
+  return 0;
+}
+
+
+
 /***************************************************************/
 /* main function   *********************************************/
 /***************************************************************/  
-int main(int argc, char *argv[])
+int mainOrig(int argc, char *argv[])
 {
 
   int narg, NumThreads, WhichQuantities;
