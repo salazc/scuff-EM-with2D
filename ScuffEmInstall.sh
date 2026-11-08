@@ -14,7 +14,7 @@ sudo apt-get install flex bison cmake make
 
 sudo apt install libtool autoconf automake pkg-config libtinyxml2-dev
 
-apt-get update
+sudo apt-get update
 
 export CC=mpicc
 export CXX=mpic++
