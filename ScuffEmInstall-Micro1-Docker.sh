@@ -16,7 +16,7 @@ apt-get install flex bison cmake make
 
 apt-get install libtool autoconf automake pkg-config libtinyxml2-dev
 
-apt-get install python3-pip python3-matplotlib python3-numpy python3-opencv
+apt-get install python3-pip python3-matplotlib python3-numpy python3-opencv python3-venv
 
 apt-get update
 
