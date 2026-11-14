@@ -2,7 +2,7 @@
 
 
 # Cleaning Repo
-git clean -dfx
+#git clean -dfx
 
 apt-get install gfortran build-essential g++ gcc
 apt-get install libblas-dev liblapack-dev libgsl-dev
