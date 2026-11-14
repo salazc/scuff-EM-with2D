@@ -34,7 +34,7 @@ cd ../../../
 
 
 
-sh ./autogen.sh  --prefix=${HOME}/scuff-em-installation  CPPFLAGS="-I/usr/include/hdf5/openmpi" LDFLAGS="-L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -L/usr/lib/x86_64-linux-gnu" LIBS="-ltinyxml2"
+sh ./autogen.sh  --prefix=/app/scuff-em-installation  CPPFLAGS="-I/usr/include/hdf5/openmpi" LDFLAGS="-L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -L/usr/lib/x86_64-linux-gnu" LIBS="-ltinyxml2"
 
-make -j 8 install
+make -j 4 install
 
