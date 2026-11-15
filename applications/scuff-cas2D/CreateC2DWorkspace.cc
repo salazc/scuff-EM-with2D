@@ -45,7 +45,8 @@ C2DWorkspace *CreateC2DWorkspace(TDRTGeometry *G, char *TransListName,
   /* 1. allocate memory for the workspace structure and          */
   /* initialize the simple fields.                               */
   /***************************************************************/
-  W=(C2DWorkspace *)malloc(sizeof(C2DWorkspace));
+  // Optional matrices and image objects must remain NULL when not allocated.
+  W=(C2DWorkspace *)calloc(1, sizeof(C2DWorkspace));
   W->G=G;
   W->TransListName=strdup(TransListName);
   N=W->N=G->TotalBFs;
