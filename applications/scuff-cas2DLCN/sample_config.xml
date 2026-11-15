@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scuff-cas2DLCN>
+  <!-- Mandatory geometry and transformation files -->
+  <Geometry>MyGeo.tdgeo</Geometry>
+  <TransList>TransList</TransList>
+
+  <!-- Optional physical / geometrical settings -->
+  <LengthUnit>1.0e-6</LengthUnit>
+  <GroundPlane>false</GroundPlane>
+  <!-- Optional: restrict force/energy contributions to vertices inside (x1, y1) -- (x2, y2)
+  <Rectangle>-1.0 -1.0 1.0 1.0</Rectangle>
+  -->
+
+  <!--
+    CalculationMode types:
+      FullIntegral  : 0 K full (Xi, Q) quarter-plane integral (no extra tags needed)
+      SinglePoint   : requires <Xi> (>= 0) and <Q>
+      QIntegral     : requires <Xi> (>= 0)
+      XiIntegral    : requires <Q>
+      MatsubaraSum  : requires <T> (>= 0, in kelvin; T=0 falls back to FullIntegral)
+      XQList        : requires <XQList> (path to file of Xi Q pairs)
+      VisualizeOnly : generates gpmesh/ppmesh files only and exits
+  -->
+  <CalculationMode type="FullIntegral">
+    <!-- Uncomment the parameters required for your chosen mode:
+    <Xi>0.5</Xi>
+    <Q>0.1</Q>
+    <T>300.0</T>
+    <XQList>xq_points.dat</XQList>
+    <VisualizeOnly>false</VisualizeOnly>
+    -->
+  </CalculationMode>
+
+  <!-- Desired output quantities and export/caching options -->
+  <Outputs>
+    <Energy>true</Energy>
+    <XForce>false</XForce>
+    <YForce>true</YForce>
+    <TETM>true</TETM>
+    <WriteHDF5>false</WriteHDF5>
+    <IntCache>true</IntCache>
+    <!-- Optional per-vertex energy/force profile output:
+    <ProfileFile>profile.out</ProfileFile>
+    -->
+  </Outputs>
+
+  <!-- Adaptive cubature tolerances and lower integration cutoff -->
+  <Cubature>
+    <AbsTol>1.0</AbsTol>
+    <RelTol>1.0e-2</RelTol>
+    <XQMin>1.0e-3</XQMin>
+  </Cubature>
+
+  <!-- Runtime options (NumThreads: 0 = auto, LogLevel: 0|1|2) -->
+  <Options>
+    <NumThreads>0</NumThreads>
+    <LogLevel>1</LogLevel>
+  </Options>
+</scuff-cas2DLCN>

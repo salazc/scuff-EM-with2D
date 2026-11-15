@@ -36,10 +36,24 @@ void UsageLCN(const char *ErrMsg, ...)
      va_end(ap);
    };
 
-  fprintf(stderr,"usage: Casimir2DLCN [options] \n");
-  fprintf(stderr," options:                 \n");
-  fprintf(stderr,"                           \n");
-  fprintf(stderr,"  --configFile  configFile.xml\n");
+  fprintf(stderr,"usage: scuff-cas2DLCN [--configFile] configFile.xml\n");
+  fprintf(stderr,"\n");
+  fprintf(stderr,"XML configuration fields:\n");
+  fprintf(stderr,"  <Geometry>MyGeo.tdgeo</Geometry>\n");
+  fprintf(stderr,"  <TransList>TransList</TransList>\n");
+  fprintf(stderr,"  <LengthUnit>xx</LengthUnit>\n");
+  fprintf(stderr,"  <GroundPlane>true|false</GroundPlane>\n");
+  fprintf(stderr,"  <Rectangle>x1 y1 x2 y2</Rectangle>\n");
+  fprintf(stderr,"  <CalculationMode type=\"FullIntegral|SinglePoint|QIntegral|XiIntegral|MatsubaraSum|XQList|VisualizeOnly\">\n");
+  fprintf(stderr,"    <Xi>xx</Xi>  <Q>xx</Q>  <T>xx</T>  <XQList>file</XQList>\n");
+  fprintf(stderr,"  </CalculationMode>\n");
+  fprintf(stderr,"  <Outputs>\n");
+  fprintf(stderr,"    <Energy>true|false</Energy>  <XForce>true|false</XForce>  <YForce>true|false</YForce>\n");
+  fprintf(stderr,"    <TETM>true|false</TETM>  <WriteHDF5>true|false</WriteHDF5>  <IntCache>true|false</IntCache>\n");
+  fprintf(stderr,"    <ProfileFile>file</ProfileFile>\n");
+  fprintf(stderr,"  </Outputs>\n");
+  fprintf(stderr,"  <Cubature> <AbsTol>xx</AbsTol> <RelTol>xx</RelTol> <XQMin>xx</XQMin> </Cubature>\n");
+  fprintf(stderr,"  <Options> <NumThreads>n</NumThreads> <LogLevel>0|1|2</LogLevel> </Options>\n");
   fprintf(stderr,"\n");
   exit(1);
 }
@@ -265,88 +279,74 @@ void WriteFilePreamble(C2DWorkspace *W, FILE *f, int FileType,
 using namespace tinyxml2;
 
 /***************************************************************/
-/* Main CHSL Implementation. Takes configuration from XML file */
+/* XML parsing helpers using tinyxml2                          */
 /***************************************************************/
-int main(int argc, char *argv[])
-{ 
-  int narg, NumThreads, WhichQuantities;
-  int TETM, GroundPlane;
-  int WriteHDF5;
-  int IntCache;
-  TDRTGeometry *G;
-  double Xi, Q, T;
-  double AbsTol, RelTol, XQMin;
-  double LengthUnit;
-  double RectangleBuffer[4], *Rectangle;
-
-  char *GeoFileBase, *TransListName, *XQListName, *ProfileFile;
-  char OutFileName[200];
-  int nt, nq, ntnq, NTNQ;
-  int VisualizeOnly;
-
-  C2DWorkspace *W;
-  FILE *f;
-  double *I, *E;
-  
-  /***************************************************************/
-  /***************************************************************/
-  /***************************************************************/
-  InstallHRSignalHandler();
-  SetLogFileName("scuff-cas2DLCN.log");
-
-  /***************************************************************/
-  /***************************************************************/
-  /* 1. process command-line arguments ***************************/
-  /***************************************************************/
-  /***************************************************************/
-  G=0;
-  TransListName=0;
-  Xi=Q=T=-1.0;
-  NumThreads=0;
-  WhichQuantities=0;
-  TETM=GroundPlane=WriteHDF5=IntCache=0;
-  XQListName=0;
-  AbsTol=1.0;
-  RelTol=1.0e-2;
-  XQMin=1.0e-3;
-  VisualizeOnly=0;
-  LengthUnit=0.0;
-  Rectangle=0;
-  ProfileFile=0;
-
-  XMLDocument doc;
-
-  if (argc < 2) {
-    Usage("No configuration file provided.");
-  }
-
-  if (doc.LoadFile(argv[1]) != XML_SUCCESS) {
-    ErrExit("Failed to load configuration file.");
-  }
-
-  XMLElement* root = doc.RootElement();
-  if (!root) {
-    ErrExit("Invalid configuration file format.");
-  } 
-
-  /***************************************************************/ 
-  /* Starting to parse XML file */
-
-
-
-
+static XMLElement *FindChildCI(XMLElement *parent, const char *name)
+{
+  if (!parent) return 0;
+  for (XMLElement *child = parent->FirstChildElement(); child; child = child->NextSiblingElement())
+   if (!StrCaseCmp(child->Name(), name))
+    return child;
   return 0;
 }
 
+static XMLElement *FindInSections(XMLElement *root, XMLElement *section, const char *name)
+{
+  XMLElement *el = FindChildCI(section, name);
+  return el ? el : FindChildCI(root, name);
+}
 
+static const char *ReadStringElement(XMLElement *root, XMLElement *section, const char *name)
+{
+  XMLElement *el = FindInSections(root, section, name);
+  if (!el) return 0;
+  const char *txt = el->GetText();
+  if (!txt) return 0;
+  while (*txt == ' ' || *txt == '\t' || *txt == '\n' || *txt == '\r') txt++;
+  return (*txt) ? txt : 0;
+}
+
+static bool ReadBoolElement(XMLElement *root, XMLElement *section, const char *name, bool defaultVal = false)
+{
+  XMLElement *el = FindInSections(root, section, name);
+  if (!el) return defaultVal;
+  const char *txt = el->GetText();
+  if (!txt) return true; // empty tag such as <Energy/> enables the flag
+  bool val = false;
+  if (el->QueryBoolText(&val) == XML_SUCCESS)
+   return val;
+  if (!StrCaseCmp(txt, "yes") || !StrCaseCmp(txt, "on"))
+   return true;
+  if (!StrCaseCmp(txt, "no") || !StrCaseCmp(txt, "off"))
+   return false;
+  ErrExit("invalid boolean value '%s' for <%s>", txt, name);
+  return false;
+}
+
+static bool ReadDoubleElement(XMLElement *root, XMLElement *section, const char *name, double *out)
+{
+  XMLElement *el = FindInSections(root, section, name);
+  if (!el) return false;
+  if (el->QueryDoubleText(out) != XML_SUCCESS)
+   ErrExit("invalid floating-point value '%s' for <%s>", el->GetText() ? el->GetText() : "", name);
+  return true;
+}
+
+static bool ReadIntElement(XMLElement *root, XMLElement *section, const char *name, int *out)
+{
+  XMLElement *el = FindInSections(root, section, name);
+  if (!el) return false;
+  if (el->QueryIntText(out) != XML_SUCCESS)
+   ErrExit("invalid integer value '%s' for <%s>", el->GetText() ? el->GetText() : "", name);
+  return true;
+}
 
 /***************************************************************/
-/* main function   *********************************************/
-/***************************************************************/  
-int mainOrig(int argc, char *argv[])
+/* Main CHSL Implementation. Takes configuration from XML file */
+/***************************************************************/
+int main(int argc, char *argv[])
 {
-
-  int narg, NumThreads, WhichQuantities;
+  int NumThreads, WhichQuantities;
   int TETM, GroundPlane;
   int WriteHDF5;
   int IntCache;
@@ -364,7 +364,7 @@ int mainOrig(int argc, char *argv[])
   C2DWorkspace *W;
   FILE *f;
   double *I, *E;
-  
+
   /***************************************************************/
   /***************************************************************/
   /***************************************************************/
@@ -372,9 +372,7 @@ int mainOrig(int argc, char *argv[])
   SetLogFileName("scuff-cas2DLCN.log");
 
   /***************************************************************/
-  /***************************************************************/
-  /* 1. process command-line arguments ***************************/
-  /***************************************************************/
+  /* 1. load and parse XML configuration file ********************/
   /***************************************************************/
   G=0;
   TransListName=0;
@@ -390,151 +388,186 @@ int mainOrig(int argc, char *argv[])
   LengthUnit=0.0;
   Rectangle=0;
   ProfileFile=0;
-  for(narg=1; narg<argc; narg++)
-   { 
-     if ( !StrCaseCmp(argv[narg],"--geometry") )
-      { if (narg+1>=argc)
-         ErrExit("--geometry option requires one argument");
-        if (G)
-         ErrExit("only one --geometry may be specified");
-        G=new TDRTGeometry(argv[++narg]);
-      }
-     else if ( !StrCaseCmp(argv[narg],"--translist") )
-      { if (narg+1>=argc)
-         ErrExit("--translist option requires one argument");
-        if (TransListName)
-         ErrExit("only one --translist may be specified");
-        TransListName=argv[++narg];
-      }
-     else if ( !StrCaseCmp(argv[narg],"--energy") )
-      { WhichQuantities|=QUANTITY_ENERGY;
-        printf("Computing energy.\n");
-      }
-     else if ( !StrCaseCmp(argv[narg],"--xforce") )
-      { WhichQuantities|=QUANTITY_XFORCE;
-        printf("Computing X force.\n");
-      }
-     else if ( !StrCaseCmp(argv[narg],"--yforce") )
-      {
-        WhichQuantities|=QUANTITY_YFORCE;
-        printf("Computing Y force.\n");
-      }
-     else if ( !StrCaseCmp(argv[narg],"--TETM") )
-      { TETM=1;
-        printf("Separating TE and TM contributions.\n");
-      }
-     else if ( !StrCaseCmp(argv[narg],"--WriteHDF5") )
-      { WriteHDF5=1;
-        printf("Exporting matrices to MATLAB files.\n");
-      }
-     else if ( !StrCaseCmp(argv[narg],"--IntCache") )
-      { IntCache=1;
-        printf("Will read integration cache file if it exists.\n");
-      }
-     else if ( !StrCaseCmp(argv[narg],"--Xi") )
-      { if (narg+1>=argc)
-         ErrExit("--Xi option requires one argument");
-        if (    1!=sscanf(argv[++narg],"%le",&Xi) || Xi<0.0 )
-         ErrExit("invalid Xi value %s",argv[narg]);
-      }
-     else if ( !StrCaseCmp(argv[narg],"--Q") )
-      { if (narg+1>=argc)
-         ErrExit("--Q option requires one argument");
-        if (    1!=sscanf(argv[++narg],"%le",&Q) )
-         ErrExit("invalid Q value %s",argv[narg]);
-      }
-     else if ( !StrCaseCmp(argv[narg],"--XQList") )
-      { if (narg+1>=argc)
-         ErrExit("--XQList option requires an argument");
-        XQListName=argv[++narg];
-        if ( !(f=fopen(XQListName,"r")) )
-         ErrExit("could not open file %s",XQListName);
-        fclose(f);
-      } 
-     else if ( !StrCaseCmp(argv[narg],"--ProfileFile") )
-      { if (narg+1>=argc)
-         ErrExit("--ProfileFile option requires an argument");
-        ProfileFile=argv[++narg];
-        printf("Writing energy/force profile information to file %s.\n",
-                ProfileFile);
-      } 
-     else if ( !StrCaseCmp(argv[narg],"--T") )
-      { if (narg+1>=argc)
-         ErrExit("--T option requires one argument");
-        if (    1!=sscanf(argv[++narg],"%le",&T) || T<0.0 )
-         ErrExit("invalid temperature value %s",argv[narg]);
-      }
-     else if ( !StrCaseCmp(argv[narg],"--LengthUnit") )
-      { if (narg+1>=argc)
-         ErrExit("--LengthUnit option requires one argument");
-        if (    1!=sscanf(argv[++narg],"%le",&LengthUnit) || LengthUnit<=0.0 )
-         ErrExit("invalid length unit %s",argv[narg]);
-        printf("Setting length unit to %e.\n",LengthUnit);
-      }
-     else if ( !StrCaseCmp(argv[narg],"--NumThreads") )
-      { if (++narg==argc) 
-         ErrExit("--NumThreads option requires an argument");
-        NumThreads=-1;
-        sscanf(argv[narg],"%i",&NumThreads);
-        if ( NumThreads<0 || NumThreads>100 ) 
-         ErrExit("invalid number of threads %s",argv[narg]);
-        printf("Using %i threads.\n",NumThreads);
-      }
-     else if ( !StrCaseCmp(argv[narg],"--LogLevel") )
-      { if (++narg==argc) 
-         ErrExit("--LogLevel option requires an argument");
-        sscanf(argv[narg],"%i",&(TDRTGeometry::LogLevel));
-        if ( TDRTGeometry::LogLevel<0 || TDRTGeometry::LogLevel>2) 
-         ErrExit("invalid log level %s",argv[narg]);
-        printf("Setting log level to %i.\n",TDRTGeometry::LogLevel);
-      }
-     else if ( !StrCaseCmp(argv[narg],"--abstol") )
-      { if (narg+1>=argc)
-         ErrExit("--abstol option requires one argument");
-        if (    1!=sscanf(argv[++narg],"%le",&AbsTol) )
-         ErrExit("invalid AbsTol value %s",argv[narg]);
-      }
-     else if ( !StrCaseCmp(argv[narg],"--reltol") )
-      { if (narg+1>=argc)
-         ErrExit("--reltol option requires one argument");
-        if (    1!=sscanf(argv[++narg],"%le",&RelTol) )
-         ErrExit("invalid RelTol value %s",argv[narg]);
-      }
-     else if ( !StrCaseCmp(argv[narg],"--XQMin") )
-      { if (narg+1>=argc)
-         ErrExit("--XQMin option requires one argument");
-        if (    1!=sscanf(argv[++narg],"%le",&XQMin) )
-         ErrExit("invalid XQMin value %s",argv[narg]);
-      }
-     else if ( !StrCaseCmp(argv[narg],"--VisualizeOnly") )
-      { 
-        VisualizeOnly=1;
-        fprintf(stderr,"Generating visualization files only.\n");
-      }
-     else if ( !StrCaseCmp(argv[narg],"--GroundPlane") )
-      { 
-        GroundPlane=1;
-        fprintf(stderr,"Infinite conducting plane at y=0.\n");
-      }
-     else if ( !StrCaseCmp(argv[narg],"--Rectangle") )
-      { 
-       fprintf(stderr,"Infinite conducting plane at y=0.\n");
-       if (narg+4>=argc)
-        ErrExit("--rectangle option requires four arguments");
-       else if (    1!=sscanf(argv[++narg],"%le",RectangleBuffer) 
-           || 1!=sscanf(argv[++narg],"%le",RectangleBuffer+1) 
-           || 1!=sscanf(argv[++narg],"%le",RectangleBuffer+2) 
-           || 1!=sscanf(argv[++narg],"%le",RectangleBuffer+3)
-           ) 
-        ErrExit("invalid argument passed to --rectangle");
-       Rectangle=RectangleBuffer;
-       fprintf(stderr,"Retaining contributions of vertices within rectangle\n");
-       fprintf(stderr," (%g,%g) -- ",Rectangle[0],Rectangle[1]);
-       fprintf(stderr," (%g,%g).\n",Rectangle[2],Rectangle[3]);
-      }
+
+  const char *ConfigFileName = 0;
+  if (argc == 2 && argv[1][0] != '-')
+   ConfigFileName = argv[1];
+  else if (argc == 3 && !StrCaseCmp(argv[1], "--configFile"))
+   ConfigFileName = argv[2];
+  else
+   UsageLCN(argc < 2 ? "No configuration file provided." : "Invalid command-line arguments.");
+
+  XMLDocument doc;
+  if (doc.LoadFile(ConfigFileName) != XML_SUCCESS)
+   ErrExit("Failed to load configuration file %s: %s", ConfigFileName, doc.ErrorStr());
+
+  XMLElement *root = doc.RootElement();
+  if (!root)
+   ErrExit("Invalid configuration file format: missing root element.");
+
+  XMLElement *calcSection    = FindChildCI(root, "CalculationMode");
+  XMLElement *outputSection  = FindChildCI(root, "Outputs");
+  XMLElement *cubSection     = FindChildCI(root, "Cubature");
+  XMLElement *optSection     = FindChildCI(root, "Options");
+
+  /*-------------------------------------------------------------*/
+  /* Geometry, TransList, LengthUnit, GroundPlane, Rectangle     */
+  /*-------------------------------------------------------------*/
+  const char *GeoFileName = ReadStringElement(root, optSection, "Geometry");
+  if (GeoFileName)
+   G = new TDRTGeometry(GeoFileName);
+
+  const char *TransListVal = ReadStringElement(root, optSection, "TransList");
+  if (TransListVal)
+   TransListName = strdup(TransListVal);
+
+  if (ReadDoubleElement(root, optSection, "LengthUnit", &LengthUnit))
+   { if (LengthUnit <= 0.0)
+      ErrExit("invalid LengthUnit value %g", LengthUnit);
+     printf("Setting length unit to %e.\n", LengthUnit);
+   }
+
+  if (ReadBoolElement(root, optSection, "GroundPlane", false))
+   { GroundPlane = 1;
+     fprintf(stderr, "Infinite conducting plane at y=0.\n");
+   }
+
+  XMLElement *rectEl = FindInSections(root, optSection, "Rectangle");
+  if (rectEl)
+   { const char *rectTxt = rectEl->GetText();
+     if (rectTxt && 4 == sscanf(rectTxt, "%le %le %le %le",
+                                RectangleBuffer, RectangleBuffer+1,
+                                RectangleBuffer+2, RectangleBuffer+3))
+      Rectangle = RectangleBuffer;
+     else if (ReadDoubleElement(rectEl, 0, "x1", RectangleBuffer)   &&
+              ReadDoubleElement(rectEl, 0, "y1", RectangleBuffer+1) &&
+              ReadDoubleElement(rectEl, 0, "x2", RectangleBuffer+2) &&
+              ReadDoubleElement(rectEl, 0, "y2", RectangleBuffer+3))
+      Rectangle = RectangleBuffer;
      else
-      Usage("unknown command-line argument %s",argv[narg]);
-   };
+      ErrExit("invalid <Rectangle> specification (expected 'x1 y1 x2 y2' or <x1><y1><x2><y2>)");
+
+     fprintf(stderr, "Retaining contributions of vertices within rectangle\n");
+     fprintf(stderr, " (%g,%g) -- ", Rectangle[0], Rectangle[1]);
+     fprintf(stderr, " (%g,%g).\n", Rectangle[2], Rectangle[3]);
+   }
+
+  /*-------------------------------------------------------------*/
+  /* Outputs & quantities                                        */
+  /*-------------------------------------------------------------*/
+  if (ReadBoolElement(root, outputSection, "Energy", false))
+   { WhichQuantities |= QUANTITY_ENERGY;
+     printf("Computing energy.\n");
+   }
+  if (ReadBoolElement(root, outputSection, "XForce", false))
+   { WhichQuantities |= QUANTITY_XFORCE;
+     printf("Computing X force.\n");
+   }
+  if (ReadBoolElement(root, outputSection, "YForce", false))
+   { WhichQuantities |= QUANTITY_YFORCE;
+     printf("Computing Y force.\n");
+   }
+  if (ReadBoolElement(root, outputSection, "TETM", false))
+   { TETM = 1;
+     printf("Separating TE and TM contributions.\n");
+   }
+  if (ReadBoolElement(root, outputSection, "WriteHDF5", false))
+   { WriteHDF5 = 1;
+     printf("Exporting matrices to MATLAB files.\n");
+   }
+  if (ReadBoolElement(root, outputSection, "IntCache", false))
+   { IntCache = 1;
+     printf("Will read integration cache file if it exists.\n");
+   }
+
+  const char *ProfileVal = ReadStringElement(root, outputSection, "ProfileFile");
+  if (ProfileVal)
+   { ProfileFile = strdup(ProfileVal);
+     printf("Writing energy/force profile information to file %s.\n", ProfileFile);
+   }
+
+  /*-------------------------------------------------------------*/
+  /* Calculation mode & mode-specific parameters                 */
+  /*-------------------------------------------------------------*/
+  const char *ModeType = 0;
+  if (calcSection)
+   { ModeType = calcSection->Attribute("type");
+     if (!ModeType) ModeType = calcSection->Attribute("mode");
+     if (!ModeType) ModeType = ReadStringElement(calcSection, 0, "Type");
+     if (!ModeType && !calcSection->FirstChildElement())
+      ModeType = calcSection->GetText();
+   }
+
+  if (ReadBoolElement(root, calcSection, "VisualizeOnly", false) ||
+      (ModeType && !StrCaseCmp(ModeType, "VisualizeOnly")))
+   { VisualizeOnly = 1;
+     fprintf(stderr, "Generating visualization files only.\n");
+   }
+
+  if (ModeType && !StrCaseCmp(ModeType, "SinglePoint"))
+   { if (!ReadDoubleElement(root, calcSection, "Xi", &Xi) || Xi < 0.0)
+      ErrExit("SinglePoint mode requires a non-negative <Xi> value");
+     if (!ReadDoubleElement(root, calcSection, "Q", &Q))
+      ErrExit("SinglePoint mode requires a <Q> value");
+   }
+  else if (ModeType && !StrCaseCmp(ModeType, "QIntegral"))
+   { if (!ReadDoubleElement(root, calcSection, "Xi", &Xi) || Xi < 0.0)
+      ErrExit("QIntegral mode requires a non-negative <Xi> value");
+   }
+  else if (ModeType && !StrCaseCmp(ModeType, "XiIntegral"))
+   { if (!ReadDoubleElement(root, calcSection, "Q", &Q))
+      ErrExit("XiIntegral mode requires a <Q> value");
+   }
+  else if (ModeType && !StrCaseCmp(ModeType, "MatsubaraSum"))
+   { if (!ReadDoubleElement(root, calcSection, "T", &T) || T < 0.0)
+      ErrExit("MatsubaraSum mode requires a non-negative <T> value");
+   }
+  else if (ModeType && !StrCaseCmp(ModeType, "XQList"))
+   { const char *XQVal = ReadStringElement(root, calcSection, "XQList");
+     if (!XQVal)
+      ErrExit("XQList mode requires an <XQList> file path");
+     XQListName = strdup(XQVal);
+   }
+  else if (ModeType && StrCaseCmp(ModeType, "FullIntegral") && StrCaseCmp(ModeType, "VisualizeOnly"))
+   { ErrExit("unknown CalculationMode '%s'", ModeType);
+   }
+  else if (!ModeType)
+   { if (ReadDoubleElement(root, calcSection, "Xi", &Xi) && Xi < 0.0)
+      ErrExit("invalid Xi value %g", Xi);
+     ReadDoubleElement(root, calcSection, "Q", &Q);
+     if (ReadDoubleElement(root, calcSection, "T", &T) && T < 0.0)
+      ErrExit("invalid temperature value %g", T);
+     const char *XQVal = ReadStringElement(root, calcSection, "XQList");
+     if (XQVal)
+      XQListName = strdup(XQVal);
+   }
+
+  if (XQListName)
+   { if (!(f = fopen(XQListName, "r")))
+      ErrExit("could not open file %s", XQListName);
+     fclose(f);
+   }
+
+  /*-------------------------------------------------------------*/
+  /* Cubature & runtime options                                  */
+  /*-------------------------------------------------------------*/
+  ReadDoubleElement(root, cubSection, "AbsTol", &AbsTol);
+  ReadDoubleElement(root, cubSection, "RelTol", &RelTol);
+  ReadDoubleElement(root, cubSection, "XQMin", &XQMin);
+
+  if (ReadIntElement(root, optSection, "NumThreads", &NumThreads))
+   { if (NumThreads < 0 || NumThreads > 100)
+      ErrExit("invalid number of threads %i", NumThreads);
+     printf("Using %i threads.\n", NumThreads);
+   }
+
+  int LogLevel = 0;
+  if (ReadIntElement(root, optSection, "LogLevel", &LogLevel))
+   { if (LogLevel < 0 || LogLevel > 2)
+      ErrExit("invalid log level %i", LogLevel);
+     TDRTGeometry::LogLevel = LogLevel;
+     printf("Setting log level to %i.\n", TDRTGeometry::LogLevel);
+   }
 
   /***************************************************************/
   /***************************************************************/
