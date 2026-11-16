@@ -1,0 +1,57 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch scuff-cas2DLCN",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/salazc/scuff-EM-Tests/testCases/cfg1/scuff-cas2DLCN",
+            "args": ["--configFile", "RunScript.xml"],
+            "stopAtEntry": false,
+            "cwd": "/home/salazc/scuff-EM-Tests/testCases/cfg1",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Launch scuff-cas2D",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/salazc/scuff-EM-Tests/testCases/cfg1/scuff-cas2D",
+            "args": ["--geometry", "PECCyls_728.tdgeo", "--TransList", "Cyls.trans", "--energy", "--q", "0", "--NumThreads", "62", "--RelTol", "1.0e-1"],
+            "stopAtEntry": false,
+            "cwd": "/home/salazc/scuff-EM-Tests/testCases/cfg1",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+
+    ]
+}

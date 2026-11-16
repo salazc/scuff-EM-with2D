@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scuff-cas2DLCN>
+  <!-- Mandatory geometry and transformation files -->
+  <Geometry>PECCyls_728.tdgeo</Geometry>
+  <TransList>Cyls.trans</TransList>
+
+  <!-- Optional physical / geometrical settings -->
+  <LengthUnit>1.0e-6</LengthUnit>
+  <GroundPlane>false</GroundPlane>
+
+  <CalculationMode type="FullIntegral">
+  </CalculationMode>
+
+  <!-- Desired output quantities and export/caching options -->
+  <Outputs>
+    <Energy>true</Energy>
+    <XForce>false</XForce>
+    <YForce>false</YForce>
+    <TETM>false</TETM>
+    <WriteHDF5>false</WriteHDF5>
+    <IntCache>true</IntCache>
+  </Outputs>
+
+  <!-- Adaptive cubature tolerances and lower integration cutoff -->
+  <Cubature>
+    <AbsTol>1.0</AbsTol>
+    <RelTol>1.0e-2</RelTol>
+    <XQMin>1.0e-3</XQMin>
+  </Cubature>
+
+  <!-- Runtime options (NumThreads: 0 = auto, LogLevel: 0|1|2) -->
+  <Options>
+    <NumThreads>62</NumThreads>
+    <LogLevel>1</LogLevel>
+  </Options>
+</scuff-cas2DLCN>

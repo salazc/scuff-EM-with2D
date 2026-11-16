@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <scuff-cas2DLCN>
   <!-- Mandatory geometry and transformation files -->
-  <Geometry>MyGeo.tdgeo</Geometry>
-  <TransList>TransList</TransList>
+  <Geometry>PECCyls_728.tdgeo</Geometry>
+  <TransList>Cyls.trans</TransList>
 
   <!-- Optional physical / geometrical settings -->
   <LengthUnit>1.0e-6</LengthUnit>
@@ -35,8 +35,8 @@
   <Outputs>
     <Energy>true</Energy>
     <XForce>false</XForce>
-    <YForce>true</YForce>
-    <TETM>true</TETM>
+    <YForce>false</YForce>
+    <TETM>false</TETM>
     <WriteHDF5>false</WriteHDF5>
     <IntCache>true</IntCache>
     <!-- Optional per-vertex energy/force profile output:
@@ -47,13 +47,13 @@
   <!-- Adaptive cubature tolerances and lower integration cutoff -->
   <Cubature>
     <AbsTol>1.0</AbsTol>
-    <RelTol>1.0e-2</RelTol>
+    <RelTol>1.0e-1</RelTol>
     <XQMin>1.0e-3</XQMin>
   </Cubature>
 
   <!-- Runtime options (NumThreads: 0 = auto, LogLevel: 0|1|2) -->
   <Options>
-    <NumThreads>0</NumThreads>
+    <NumThreads>62</NumThreads>
     <LogLevel>1</LogLevel>
   </Options>
 </scuff-cas2DLCN>
